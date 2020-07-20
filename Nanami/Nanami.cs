@@ -86,20 +86,9 @@ namespace Nanami
         private int _timerCount;
         private void OnTimerUpdate(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            if (!Config.AutoBroadcastBestKiller)
-            {
-                return;
-            }
-
-            if (++_timerCount < Config.AutoBroadcastSeconds)
-            {
-                return;
-            }
-
-            if (Main.player.Where(p => p?.active == true).All(p => !p.hostile))
-            {
-                return;
-            }
+            if (!Config.AutoBroadcastBestKiller)return;
+            if (++_timerCount < Config.AutoBroadcastSeconds) return;
+            if (Main.player.Where(p => p?.active == true).All(p => !p.hostile))return;
 
             var max =
                 (from player in TShock.Players
@@ -111,10 +100,8 @@ namespace Nanami
             var sb = new StringBuilder(new string('=', 10)).Append("PvP战绩排行").AppendLine(new string('=', 10));
             for (var i = 0; i < 3; ++i)
             {
-                if (max.Length <= i)
-                    break;
-                sb
-                    .Append($"第{(i + 1).ToChineseCharacterDigit()}名： {max[i].KillStreak.ToChineseCharacterDigit()}连杀".PadRight(13))
+                if (max.Length <= i)break;
+                sb  .Append($"第{(i + 1).ToChineseCharacterDigit()}名： {max[i].KillStreak.ToChineseCharacterDigit()}连杀".PadRight(13))
                     .Append(" —— ")
                     .AppendLine(TShock.Players[max.ElementAt(i).PlayerIndex].Name);
 
@@ -122,56 +109,44 @@ namespace Nanami
             var sbText = sb.ToString().TrimEnd();
 
             foreach (var player in TShock.Players.Where(p => p != null && p.Active && p.RealPlayer && p.TPlayer.hostile))
-            {
                 player.SendMessage(sbText, Color.Orange);
-            }
 
             _timerCount = 0;
         }
 
-        private static void OnGreetPlayer(GreetPlayerEventArgs args)
+        static void OnGreetPlayer(GreetPlayerEventArgs args)
         {
             var player = TShock.Players[args.Who];
-            if (player == null)
-                return;
+            if (player == null)return;
 
             PlayerPvpData.LoadPlayerData(player);
             player.SetData(PvpAllow, true);
         }
 
-        private static void OnLeave(LeaveEventArgs args)
+        static void OnLeave(LeaveEventArgs args)
         {
             var player = TShock.Players[args.Who];
 
             var data = PlayerPvpData.GetPlayerData(player);
-            if (data == null)
-                return;
+            if (data == null)return;
 
             PvpDatas.Save(player.Account.ID, data);
         }
 
-        private static void OnPostSaveWorld(bool useCloudSaving, bool resetTime)
+        static void OnPostSaveWorld(bool useCloudSaving, bool resetTime)
         {
             foreach (var plr in TShock.Players.Where(p => p?.Active == true && p.TPlayer?.hostile == true))
             {
                 var data = PlayerPvpData.GetPlayerData(plr);
-
-                if (data == null)
-                    continue;
-
+                if (data == null)continue;
                 PvpDatas.Save(plr.Account.ID, data);
             }
         }
 
-        private static void OnPvpToggle(object sender, GetDataHandlers.TogglePvpEventArgs args)
+        static void OnPvpToggle(object sender, GetDataHandlers.TogglePvpEventArgs args)
         {
-            if (!args.Pvp)
-            {
-                return;
-            }
-
-            TShock.Players[args.PlayerId]
-                .SendInfoMessage("你可以通过 {0} 查看你的战绩.", TShock.Utils.ColorTag("/pvp", Color.LightSkyBlue));
+            if (!args.Pvp)return;
+            TShock.Players[args.PlayerId].SendInfoMessage("你可以通过 {0} 查看你的战绩.", TShock.Utils.ColorTag("/pvp", Color.LightSkyBlue));
         }
 
         private static void Show(CommandArgs args)
@@ -211,19 +186,17 @@ namespace Nanami
             args.Player.SendInfoMessage($"{"",11}* | 死亡 {dt.Deaths,8} | {"最大连续消灭",6} {dt.BestKillStreak,8} |");
         }
 
-        private static void SetPvpAllow(CommandArgs args)
+        static void SetPvpAllow(CommandArgs args)
         {
             var current = args.Player.GetData<bool>(PvpAllow);
 
-            if (!current)
-                args.Player.SendSuccessMessage("开启战绩可见.");
-            if (current)
-                args.Player.SendSuccessMessage("关闭战绩可见.");
+            if (!current)   args.Player.SendSuccessMessage("开启战绩可见.");
+            if (current)    args.Player.SendSuccessMessage("关闭战绩可见.");
 
             args.Player.SetData(PvpAllow, !current);
         }
 
-        private static void OnReload(ReloadEventArgs e)
+        static void OnReload(ReloadEventArgs e)
         {
             Config = Configuration.Read(Configuration.FilePath);
             Config.Write(Configuration.FilePath);
